@@ -7,13 +7,15 @@ class FatTree(Topo):
 
     def __init__(self, levels=3, *args, **kwargs):
         Topo.__init__(self, *args, **kwargs)
-
+        if levels < 1:
+            return
         self.create_levels(levels, CLIENTS)
 
     def create_levels(self, levels, clients_num):
         # Agrego los 3 hosts "iniciales", cada uno con nombre h_{0, 1, 2}
         clients = [self.addHost('h{}'.format(i)) for i in range(clients_num)]
         prev_sw = []
+        switches = []
 
         for level in range(levels):
             # Por cada uno de los niveles, agrego 2^nivel switches
