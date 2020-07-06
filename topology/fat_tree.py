@@ -12,18 +12,21 @@ class FatTree(Topo):
         self.create_levels(levels, CLIENTS)
 
     def create_levels(self, levels, clients_num):
-        # Agrego los 3 hosts "iniciales", cada uno con nombre h_{0, 1, 2}
-        clients = [self.addHost('h{}'.format(i)) for i in range(clients_num)]
+        # Agrego los 3 hosts "iniciales", cada uno con nombre h_{1, 2...}
+        # Empiezo desde el 1 ya que mininet linkea por defecto h1 con ip 00...01 ,etc
+        clients = [self.addHost('h{}'.format(i+1)) for i in range(clients_num)]
         prev_sw = []
         switches = []
 
         for level in range(levels):
             # Por cada uno de los niveles, agrego 2^nivel switches
+            # y para seguir el trafico con pox se nos hace mucho mas facil
             switches_count = 2**level
 
-            # Nomenclatura para facil identificacion 'sw_{nivel}_{n} donde N es
-            # el numero del switch dentro de ese mismo nivel
-            switches = [self.addSwitch('sw{}_{}'.format(level, n)) for n in range(switches_count)]
+            # Empiezo desde el 1 ya que mininet linkea por defecto mac de s1 con 00-00-..-01 ,etc
+            # y para seguir el trafico con pox se nos hace mucho mas facil
+            # nivel = floor(log2(#swith)), siendo nivel=0 el primer nivel
+            switches = [self.addSwitch('s{}'.format(2**(level+1)-(switches_count-n))) for n in range(switches_count)]
 
             if prev_sw:
                 # Estoy en un nivel no-root, agrego links entre todos los
@@ -45,7 +48,7 @@ class FatTree(Topo):
         # y el switch
         host_num = clients_num
         for sw in switches:
-            leaf = self.addHost('h{}'.format(host_num))
+            leaf = self.addHost('h{}'.format(host_num+1))
             self.addLink(sw, leaf)
             host_num += 1
 

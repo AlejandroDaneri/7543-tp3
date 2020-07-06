@@ -1,11 +1,12 @@
 from pox.core import core
+from pox.lib.util import dpid_to_str
 import pox.openflow.libopenflow_01 as of
 
 log = core.getLogger()
 
 class SwitchController:
   def __init__(self, dpid, connection):
-    self.dpid = dpid
+    self.dpid = dpid_to_str(dpid)
     self.connection = connection
     # El SwitchController se agrega como handler de los eventos del switch
     self.connection.addListeners(self)
