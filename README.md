@@ -1,6 +1,13 @@
 # 75.43 - Introducción a los Sistemas Distribuidos
 ## Trabajo Práctico 3 - SDN
 
+## Links de interes
+https://repositorio.upct.es/bitstream/handle/10317/5254/tfg729.pdf?sequence=1&isAllowed=y
+
+https://openflow.stanford.edu/display/ONL/POX+Wiki.html#POXWiki-ofp_packet_out-Sendingpacketsfromtheswitch
+
+https://programtalk.com/python-examples/pox.lib.util.dpid_to_str/
+
 ### Prerequisitos
 Para correr el TP debemos tener instalado docker y docker-compose. Para instalarlo, pueden chequear la documentación aquí:
 - [Ubuntu](https://docs.docker.com/install/linux/docker-ce/ubuntu/)
