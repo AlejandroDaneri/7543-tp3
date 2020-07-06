@@ -22,7 +22,7 @@ class SwitchController:
     packet = event.parsed
     ip = packet.find('ipv4')
     if ip:
-      log.info("Recibiendo ping de %s en puerto %s", ip.srcip, event.port)
+      log.info("%s, puerto %s : Ping %s -> %s", event.connection, event.port, ip.srcip, ip.dstip)
 
       #Actualizo la tabla
       self.table[(event.connection, packet.src)] = event.port
