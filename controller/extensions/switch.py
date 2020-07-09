@@ -11,8 +11,10 @@ class SwitchController:
     # El SwitchController se agrega como handler de los eventos del switch
     self.connection.addListeners(self)
 
-    # "FW table", con pares (switch, MAC-addr)
+    # "CAM table", con pares (MAC-addr, port)
+    # posibles cosas a guardar para matchear mac,ip,port ambas src/dst
     self.table = {}
+
 
   def _handle_PacketIn(self, event):
     """
@@ -22,14 +24,17 @@ class SwitchController:
     packet = event.parsed
     ip = packet.find('ipv4')
     if ip:
-      log.info("%s, puerto %s : Ping %s -> %s", event.connection, event.port, ip.srcip, ip.dstip)
+      log.info("[%s puerto %s] %s -> %s", dpid_to_str(event.dpid), event.port, ip.srcip, ip.dstip)
 
       #Actualizo la tabla
-      self.table[(event.connection, packet.src)] = event.port
+      self.table[packet.src] = event.port
 
-      dst_port = self.table.get((event.connection, packet.dst))
+      dst_port = self.table.get(packet.dst)
 
-      # Si no hay puerto envia por todos los puertos menos por el cual llego
+      if dst_port == event.port:
+        return
+
+      # Si no hay puerto envia por todos los puertos menos por el cual llego (flooding)
       if dst_port is None:
         msg = of.ofp_packet_out(data=event.ofp)
         msg.actions.append(of.ofp_action_output(port=of.OFPP_ALL))
