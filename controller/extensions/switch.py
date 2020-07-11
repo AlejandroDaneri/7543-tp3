@@ -31,6 +31,7 @@ class SwitchController:
 
       dst_port = self.table.get(packet.dst)
 
+      # Descarta el paquete si el puerto de salida es igual al de entrada
       if dst_port == event.port:
         return
 
