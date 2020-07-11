@@ -67,11 +67,6 @@ class Controller:
                 log.info('link removed [%s:%s] -> [%s:%s]', sw1, pt1, sw2, pt2)
             except:
                 log.error("remove edge error")
-        #
-        # try:
-        #     shortest_path(self.g, 1, 6)
-        # except:
-        #     log.error("no such Graph")
 
 
 def launch():

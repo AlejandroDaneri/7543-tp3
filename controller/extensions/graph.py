@@ -26,4 +26,9 @@ class Graph:
 
     def print_graph(self):
         print(self.dict)
-        print('\n')
+
+    def nodes(self):
+        return self.dict.keys()
+
+    def neighbours(self, node):
+        return self.dict[node]
