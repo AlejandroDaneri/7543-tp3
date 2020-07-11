@@ -35,10 +35,15 @@ class Controller:
     Se encarga de crear un nuevo switch controller para manejar los eventos de cada switch
     """
         log.info("Switch %s has come up.", dpid_to_str(event.dpid))
+        self.g.add_node(dpid_to_str(event.dpid))
+
         if (event.connection not in self.connections):
             self.connections.add(event.connection)
             sw = SwitchController(event.dpid, event.connection)
             self.switches.append(sw)
+
+    def _handle_ConnectionDown(self, event):
+        self.g.remove_node(dpid_to_str(event.dpid))
 
     def _handle_LinkEvent(self, event):
         """
@@ -49,8 +54,6 @@ class Controller:
         sw2 = dpid_to_str(link.dpid2)
         pt1 = link.port1
         pt2 = link.port2
-        self.g.add_node(sw1)
-        self.g.add_node(sw2)
         if event.added:
             try:
                 self.g.add_edge(sw1, sw2)
