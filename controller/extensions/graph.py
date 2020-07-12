@@ -1,6 +1,8 @@
 class Graph:
 
     def __init__(self):
+        # Como clave tiene la MAC de un switch y como clave
+        # un array de los distintos switches a los que puede llegar
         self.dict = {}
 
     def add_node(self, node):
@@ -8,15 +10,15 @@ class Graph:
             self.dict[node] = []
         self.print_graph()
 
-    def add_edge(self, node1, node2):
-        if node1 in self.dict:
-            self.dict[node1].append(node2)
+    def add_edge(self, src_node, dst_node, src_prt):
+        if src_node in self.dict:
+            self.dict[src_node].append((dst_node, src_prt))
         else:
-            self.dict[node1] = [node2]
+            self.dict[src_node] = [dst_node]
         self.print_graph()
 
-    def remove_edge(self, node1, node2):
-        self.dict[node1].remove(node2)
+    def remove_edge(self, src_node, dst_node, src_prt):
+        self.dict[src_node].remove((dst_node, src_prt))
         self.print_graph()
 
     def remove_node(self, node):

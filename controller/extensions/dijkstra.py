@@ -31,7 +31,7 @@ def shortest_path(graph, src, dst):
             # Compare the newly calculated distance to the assigned
             # and save the smaller one.
             if alternative_route < distances[neighbour]:
-                distances[neighbour] = alternative_route
+                distances[neighbour] = alternative_route  # +1 (costo)?
                 previous_vertices[neighbour] = current_vertex
 
         # 5. Mark the current node as visited
