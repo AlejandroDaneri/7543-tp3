@@ -5,7 +5,7 @@ import pox.openflow.libopenflow_01 as of
 log = core.getLogger()
 
 class SwitchController:
-  def __init__(self, dpid, connection):
+  def __init__(self, dpid, connection, graph):
     self.dpid = dpid_to_str(dpid)
     self.connection = connection
     # El SwitchController se agrega como handler de los eventos del switch
@@ -15,6 +15,7 @@ class SwitchController:
     # posibles cosas a guardar para matchear mac,ip,port ambas src/dst
     self.table = {}
 
+    self.graph = graph
 
   def _handle_PacketIn(self, event):
     """

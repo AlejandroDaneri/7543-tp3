@@ -14,7 +14,7 @@ class Controller:
     def __init__(self):
         self.connections = set()
         self.switches = []
-        self.g = Graph()
+        self.graph = Graph()
 
         # Esperando que los modulos openflow y openflow_discovery esten listos
         core.call_when_ready(self.startup, ('openflow', 'openflow_discovery'))
@@ -35,17 +35,17 @@ class Controller:
         Se encarga de crear un nuevo switch controller para manejar los eventos de cada switch
         """
         log.info("Switch %s has come up.", dpid_to_str(event.dpid))
-        self.g.add_node(dpid_to_str(event.dpid))
+        self.graph.add_node(dpid_to_str(event.dpid))
 
         if event.connection not in self.connections:
             self.connections.add(event.connection)
-            sw = SwitchController(event.dpid, event.connection)
+            sw = SwitchController(event.dpid, event.connection, self.graph)
             self.switches.append(sw)
 
     def _handle_ConnectionDown(self, event):
         if event.connection in self.connections:
             self.connections.remove(event.connection)
-        self.g.remove_node(dpid_to_str(event.dpid))
+        self.graph.remove_node(dpid_to_str(event.dpid))
 
     def _handle_LinkEvent(self, event):
         """
@@ -58,14 +58,14 @@ class Controller:
         dst_port = link.port2
         if event.added:
             try:
-                self.g.add_edge(src_sw, dst_sw, src_port)
+                self.graph.add_edge(src_sw, dst_sw, src_port)
                 # ya lo logea el discover pero para testear
                 log.info('link added: [%s:%s] -> [%s:%s]', src_sw, src_port, dst_sw, dst_port)
             except:
                 log.error("add edge error")
         elif event.removed:
             try:
-                self.g.remove_edge(src_sw, dst_sw, src_port)
+                self.graph.remove_edge(src_sw, dst_sw, src_port)
                 log.info('link removed [%s:%s] -> [%s:%s]', src_sw, src_port, dst_sw, dst_port)
             except:
                 log.error("remove edge error")
