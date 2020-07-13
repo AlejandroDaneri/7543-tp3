@@ -20,6 +20,7 @@ class Controller(EventMixin):
         self.switches = []  # en desuso actualmente ( vino con el framework )
         self.hosts = {}  # host: switch al que se conecto
         self.graph = Graph()
+        self.pb = Publisher()
 
         self.listenTo(core)
 
@@ -38,6 +39,8 @@ class Controller(EventMixin):
 
         core.addListeners(self)
 
+        self.listenTo(self.pb)
+
         log.info('Controller initialized')
 
     def _handle_ConnectionUp(self, event):
@@ -50,7 +53,7 @@ class Controller(EventMixin):
 
         if event.connection not in self.connections:
             self.connections.add(event.connection)
-            sw = SwitchController(event.dpid, event.connection, self.graph, self.hosts)
+            sw = SwitchController(event.dpid, event.connection, self.graph, self.hosts, self.pb)
             self.switches.append(sw)
 
     def _handle_ConnectionDown(self, event):
@@ -82,11 +85,11 @@ class Controller(EventMixin):
             except:
                 log.error("remove edge error")
 
-    # Intentando capturar el evento de prueba pero no funciona
+    # Capturando el evento de prueba. No funciona si le pasamos argumentos
     def _handle_TestEvent(self, event):
         log.info("Test Event is raised,I heard TestEvent\n")
-        log.info("EventPar:", event.par)
-        log.info("EventPar:", event.par2)
+        log.info(event.arg1)
+        # log.info("EventPar:", event.par2)
 
 def launch():
     # Inicializando el modulo openflow_discovery

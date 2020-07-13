@@ -13,9 +13,13 @@ class Publisher(EventMixin):
         self.listenTo(core)
         print("Publisher is intialed\n")
 
+    def _handle_GoingUpEvent(self, event):
+        self.listenTo(core.openflow)
+        print("this is in publisher, what is this for?\n")
+
     def publishEvent(self):
         print("publishEvent is called, will raise the test Event\n")
-        self.raiseEvent(TestEvent, "firstPar", "secondPar")
+        self.raiseEvent(TestEvent, "SOY EL ARGUMENTO 1")
         print("foo raised event\n")
 
 

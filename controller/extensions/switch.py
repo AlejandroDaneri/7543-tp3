@@ -8,12 +8,13 @@ from extensions.publisher import Publisher
 log = core.getLogger()
 
 class SwitchController:
-  def __init__(self, dpid, connection, graph, hosts):
+  def __init__(self, dpid, connection, graph, hosts,pb):
     self.dpid = dpid_to_str(dpid)
     self.connection = connection
     # El SwitchController se agrega como handler de los eventos del switch
     self.connection.addListeners(self)
 
+    self.pb = pb
     # "CAM table", con pares (MAC-addr, port)
     # TODO: cosas a guardar para matchear dst_port, src_port, dst_ip, src_ip, protocol
     self.table = {}
@@ -90,6 +91,5 @@ class SwitchController:
 
         # Intentando hacer lo que dice (1) creando un evento para que le pase toda la info al controller,
         # pero el controller no detecta el evento creado ( si se levanta bien, pero no lo detecta )
-        pb = Publisher()
 
-        pb.publishEvent()
+        self.pb.publishEvent()
