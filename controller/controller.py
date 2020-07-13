@@ -12,7 +12,8 @@ class Controller:
 
     def __init__(self):
         self.connections = set()
-        self.switches = []
+        self.switches = []  # en desuso actualmente ( vino con el framework )
+        self.hosts = {}  # host: switch al que se conecto
         self.graph = Graph()
 
         # Esperando que los modulos openflow y openflow_discovery esten listos
@@ -38,7 +39,7 @@ class Controller:
 
         if event.connection not in self.connections:
             self.connections.add(event.connection)
-            sw = SwitchController(event.dpid, event.connection, self.graph)
+            sw = SwitchController(event.dpid, event.connection, self.graph, self.hosts)
             self.switches.append(sw)
 
     def _handle_ConnectionDown(self, event):
@@ -55,6 +56,7 @@ class Controller:
         dst_sw = dpid_to_str(link.dpid2)
         src_port = link.port1
         dst_port = link.port2
+        log.info("Hosts detectados: %s", self.hosts)
         if event.added:
             try:
                 self.graph.add_edge(src_sw, dst_sw, src_port)
