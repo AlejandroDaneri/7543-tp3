@@ -6,15 +6,23 @@ from pox.lib.util import dpid_to_str
 from extensions.switch import SwitchController
 from extensions.graph import Graph
 
+from extensions.publisher import Publisher
+
+from pox.core import core
+from pox.lib.revent import *
+
 log = core.getLogger()
 
-class Controller:
+class Controller(EventMixin):
 
     def __init__(self):
         self.connections = set()
         self.switches = []  # en desuso actualmente ( vino con el framework )
         self.hosts = {}  # host: switch al que se conecto
         self.graph = Graph()
+
+        self.listenTo(core)
+
 
         # Esperando que los modulos openflow y openflow_discovery esten listos
         core.call_when_ready(self.startup, ('openflow', 'openflow_discovery'))
@@ -27,6 +35,9 @@ class Controller:
         """
         core.openflow.addListeners(self)
         core.openflow_discovery.addListeners(self)
+
+        core.addListeners(self)
+
         log.info('Controller initialized')
 
     def _handle_ConnectionUp(self, event):
@@ -71,6 +82,11 @@ class Controller:
             except:
                 log.error("remove edge error")
 
+    # Intentando capturar el evento de prueba pero no funciona
+    def _handle_TestEvent(self, event):
+        log.info("Test Event is raised,I heard TestEvent\n")
+        log.info("EventPar:", event.par)
+        log.info("EventPar:", event.par2)
 
 def launch():
     # Inicializando el modulo openflow_discovery
