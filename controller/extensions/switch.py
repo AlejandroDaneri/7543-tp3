@@ -1,6 +1,8 @@
 from pox.core import core
 from pox.lib.util import dpid_to_str
 import pox.openflow.libopenflow_01 as of
+from extensions.dijkstra import shortest_path
+
 
 log = core.getLogger()
 
@@ -27,26 +29,30 @@ class SwitchController:
     if ip:
       log.info("[%s puerto %s] %s -> %s", dpid_to_str(event.dpid), event.port, ip.srcip, ip.dstip)
 
-      #Actualizo la tabla
-      self.table[packet.src] = event.port
+      if (ip.srcip == '10.0.0.1') and (ip.dstip == '10.0.0.7'):
+        print(shortest_path(self.graph, '00-00-00-00-00-01', '00-00-00-00-00-07'))
 
-      dst_port = self.table.get(packet.dst)
 
-      # Descarta el paquete si el puerto de salida es igual al de entrada
-      if dst_port == event.port:
-        return
-
-      # Si no hay puerto envia por todos los puertos menos por el cual llego (flooding)
-      if dst_port is None:
-        msg = of.ofp_packet_out(data=event.ofp)
-        msg.actions.append(of.ofp_action_output(port=of.OFPP_ALL))
-        event.connection.send(msg)
-
-      # Si hay puerto envia por ese
-      else:
-        msg = of.ofp_flow_mod()
-        msg.data = event.ofp
-        msg.match.dl_src = packet.src
-        msg.match.dl_dst = packet.dst
-        msg.actions.append(of.ofp_action_output(port=dst_port))
-        event.connection.send(msg)
+      # #Actualizo la tabla
+      # self.table[packet.src] = event.port
+      #
+      # dst_port = self.table.get(packet.dst)
+      #
+      # # Descarta el paquete si el puerto de salida es igual al de entrada
+      # if dst_port == event.port:
+      #   return
+      #
+      # # Si no hay puerto envia por todos los puertos menos por el cual llego (flooding)
+      # if dst_port is None:
+      #   msg = of.ofp_packet_out(data=event.ofp)
+      #   msg.actions.append(of.ofp_action_output(port=of.OFPP_ALL))
+      #   event.connection.send(msg)
+      #
+      # # Si hay puerto envia por ese
+      # else:
+      #   msg = of.ofp_flow_mod()
+      #   msg.data = event.ofp
+      #   msg.match.dl_src = packet.src
+      #   msg.match.dl_dst = packet.dst
+      #   msg.actions.append(of.ofp_action_output(port=dst_port))
+      #   event.connection.send(msg)

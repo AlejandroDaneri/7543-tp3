@@ -5,7 +5,6 @@ import pox.forwarding.l2_learning
 from pox.lib.util import dpid_to_str
 from extensions.switch import SwitchController
 from extensions.graph import Graph
-from extensions.dijkstra import shortest_path
 
 log = core.getLogger()
 
