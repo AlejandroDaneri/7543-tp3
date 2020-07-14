@@ -2,8 +2,7 @@ from pox.core import core
 from pox.lib.util import dpid_to_str
 import pox.openflow.libopenflow_01 as of
 from extensions.dijkstra import shortest_path
-from extensions.publisher import Publisher
-
+from extensions.flow import Flow
 
 log = core.getLogger()
 
@@ -16,7 +15,6 @@ class SwitchController:
 
     self.pb = pb
     # "CAM table", con pares (MAC-addr, port)
-    # TODO: cosas a guardar para matchear dst_port, src_port, dst_ip, src_ip, protocol
     self.table = {}
 
     self.graph = graph
@@ -32,6 +30,7 @@ class SwitchController:
     ip = packet.find('ipv4')
     if ip:
       log.info("[%s puerto %s] %s -> %s", dpid_to_str(event.dpid), event.port, ip.srcip, ip.dstip)
+      tcp = event.parsed.find('tcp')
 
       #Actualizo la tabla
       self.table[packet.src] = event.port
@@ -60,8 +59,8 @@ class SwitchController:
         next_sw = path.popleft()
 
         portt = self.graph.get_port_to(dpid_to_str(event.dpid), next_sw)
-        print(next_sw)
-        print(portt)
+        # print(next_sw)
+        # print(portt)
 
         # (1) Lo que sigue deberia mandarse para guardar en todos los switches del path
         # porque de esta forma no funciona
@@ -89,7 +88,6 @@ class SwitchController:
 
         # Fin (1)
 
-        # Intentando hacer lo que dice (1) creando un evento para que le pase toda la info al controller,
-        # pero el controller no detecta el evento creado ( si se levanta bien, pero no lo detecta )
-
+        # Intentando hacer lo que dice (1)
+        Flow(ip.srcip, tcp.srcport, ip.dstip, tcp.dstport, ip.protocol)
         self.pb.publishEvent()

@@ -85,7 +85,7 @@ class Controller(EventMixin):
             except:
                 log.error("remove edge error")
 
-    # Capturando el evento de prueba. No funciona si le pasamos argumentos
+    # Capturando el evento de prueba
     def _handle_TestEvent(self, event):
         log.info("Test Event is raised,I heard TestEvent\n")
         log.info(event.arg1)
