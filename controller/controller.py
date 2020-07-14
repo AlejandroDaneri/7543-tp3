@@ -89,16 +89,18 @@ class Controller(EventMixin):
 
     # Capturando el evento de prueba
     def _handle_TestEvent(self, event):
-        log.info("Test Event is raised,I heard TestEvent\n")
+        log.info("Escuche el evento\n")
         flow = event.flow
         path = event.path
 
         i = 0
         while i < len(path)-1:
+            print("Entre al loop")
             sw_controller = self.switches[path[i]]
             sw_controller.update(flow, path[i+1])
+            i += 1
 
-        self.switches[path[i+1]].forwardPortToHost(flow)
+        self.switches[path[i]].forwardPortToHost(flow)
 
 def launch():
     # Inicializando el modulo openflow_discovery

@@ -55,7 +55,7 @@ class SwitchController:
 
         if ip.dstip != '10.0.0.7':
           dest = self.hosts[ip.dstip]
-        print(shortest_path(self.graph, self.hosts[ip.srcip], dest))
+        print("El camino minimo es:", shortest_path(self.graph, self.hosts[ip.srcip], dest))
 
         path = shortest_path(self.graph, self.hosts[ip.srcip], dest)
         # next_sw = path.popleft()
@@ -92,12 +92,18 @@ class SwitchController:
 
   def update(self, flow, next_sw):
     msg = of.ofp_flow_mod()
+    msg.data = ''
     msg.match.nw_src = flow.src_ip
     msg.match.nw_dst = flow.dst_ip
     msg.match.tp_src = flow.src_port
     msg.match.tp_dst = flow.dst_port
-    msg.actions.append(of.ofp_action_output(port=self.neighbour[next_sw]))
+    msg.match.nw_proto = flow.protocol
+    msg.match.dl_type = 0x800
+    port = self.neighbour[next_sw]
+    print("update", self.dpid, port)
+    msg.actions.append(of.ofp_action_output(port=port))
     self.connection.send(msg)
+
 
   def addLinkTo(self, dst_sw, src_port):
     self.neighbour[dst_sw] = src_port
@@ -108,10 +114,15 @@ class SwitchController:
   #harcodeado
   def forwardPortToHost(self, flow):
     msg = of.ofp_flow_mod()
+    msg.data = ''
     msg.match.nw_src = flow.src_ip
     msg.match.nw_dst = flow.dst_ip
     msg.match.tp_src = flow.src_port
     msg.match.tp_dst = flow.dst_port
+    msg.match.nw_proto = flow.protocol
+    msg.match.dl_type = 0x800
+    print("forward", self.dpid)
+
     msg.actions.append(of.ofp_action_output(port=3))
     self.connection.send(msg)
 
