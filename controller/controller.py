@@ -17,7 +17,7 @@ class Controller(EventMixin):
 
     def __init__(self):
         self.connections = set()
-        self.switches = []  # en desuso actualmente ( vino con el framework )
+        self.switches = {}
         self.hosts = {}  # host: switch al que se conecto
         self.graph = Graph()
         self.pb = Publisher()
@@ -54,7 +54,7 @@ class Controller(EventMixin):
         if event.connection not in self.connections:
             self.connections.add(event.connection)
             sw = SwitchController(event.dpid, event.connection, self.graph, self.hosts, self.pb)
-            self.switches.append(sw)
+            self.switches[dpid_to_str(event.dpid)] = sw
 
     def _handle_ConnectionDown(self, event):
         if event.connection in self.connections:
@@ -73,14 +73,16 @@ class Controller(EventMixin):
         log.info("Hosts detectados: %s", self.hosts)
         if event.added:
             try:
-                self.graph.add_edge(src_sw, dst_sw, src_port)
+                self.graph.add_edge(src_sw, dst_sw)
+                self.switches[src_sw].addLinkTo(dst_sw, src_port)
                 # ya lo logea el discover pero para testear
                 log.info('link added: [%s:%s] -> [%s:%s]', src_sw, src_port, dst_sw, dst_port)
             except:
                 log.error("add edge error")
         elif event.removed:
             try:
-                self.graph.remove_edge(src_sw, dst_sw, src_port)
+                self.graph.remove_edge(src_sw, dst_sw)
+                self.switches[src_sw].removeLinkTo(dst_sw)
                 log.info('link removed [%s:%s] -> [%s:%s]', src_sw, src_port, dst_sw, dst_port)
             except:
                 log.error("remove edge error")
@@ -88,8 +90,15 @@ class Controller(EventMixin):
     # Capturando el evento de prueba
     def _handle_TestEvent(self, event):
         log.info("Test Event is raised,I heard TestEvent\n")
-        log.info(event.arg1)
-        # log.info("EventPar:", event.par2)
+        flow = event.flow
+        path = event.path
+
+        i = 0
+        while i < len(path)-1:
+            sw_controller = self.switches[path[i]]
+            sw_controller.update(flow, path[i+1])
+
+        self.switches[path[i+1]].forwardPortToHost(flow)
 
 def launch():
     # Inicializando el modulo openflow_discovery

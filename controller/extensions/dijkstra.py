@@ -30,9 +30,9 @@ def shortest_path(graph, src, dst):
 
             # Compare the newly calculated distance to the assigned
             # and save the smaller one.
-            if alternative_route < distances[neighbour[0]]:
-                distances[neighbour[0]] = alternative_route  # +1 (costo)?
-                previous_vertices[neighbour[0]] = current_vertex
+            if alternative_route < distances[neighbour]:
+                distances[neighbour] = alternative_route  # +1 (costo)?
+                previous_vertices[neighbour] = current_vertex
 
         # 5. Mark the current node as visited
         # and remove it from the unvisited set.
@@ -42,4 +42,6 @@ def shortest_path(graph, src, dst):
     while previous_vertices[current_vertex] is not None:
         path.appendleft(current_vertex)
         current_vertex = previous_vertices[current_vertex]
+    if path:
+        path.appendleft(current_vertex)
     return path

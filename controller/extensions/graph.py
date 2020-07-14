@@ -10,15 +10,15 @@ class Graph:
             self.dict[node] = []
         self.print_graph()
 
-    def add_edge(self, src_node, dst_node, src_prt):
+    def add_edge(self, src_node, dst_node):
         if src_node in self.dict:
-            self.dict[src_node].append((dst_node, src_prt))
+            self.dict[src_node].append(dst_node)
         else:
-            self.dict[src_node] = [(dst_node, src_prt)]
+            self.dict[src_node] = [dst_node]
         self.print_graph()
 
-    def remove_edge(self, src_node, dst_node, src_prt):
-        self.dict[src_node].remove((dst_node, src_prt))
+    def remove_edge(self, src_node, dst_node):
+        self.dict[src_node].remove(dst_node)
         self.print_graph()
 
     def remove_node(self, node):
@@ -35,8 +35,3 @@ class Graph:
     def neighbours(self, node):
         return self.dict[node]
 
-    def get_port_to(self, actual_node, dst_node):
-        for possible in self.dict[actual_node]:
-            if possible[0] == dst_node:
-                return possible[1]
-        return None

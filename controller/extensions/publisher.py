@@ -17,9 +17,9 @@ class Publisher(EventMixin):
         self.listenTo(core.openflow)
         print("this is in publisher, what is this for?\n")
 
-    def publishEvent(self):
+    def publishPath(self, flow, path):
         print("publishEvent is called, will raise the test Event\n")
-        self.raiseEvent(TestEvent, "SOY EL ARGUMENTO 1")
+        self.raiseEvent(TestEvent, flow, path)
         print("foo raised event\n")
 
 

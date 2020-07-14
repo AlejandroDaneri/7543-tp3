@@ -21,6 +21,9 @@ class SwitchController:
 
     self.hosts = hosts
 
+    # switch_vecino: puerto para llegar
+    self.neighbour = {}
+
   def _handle_PacketIn(self, event):
     """
     Esta funcion es llamada cada vez que el switch recibe un paquete
@@ -30,7 +33,6 @@ class SwitchController:
     ip = packet.find('ipv4')
     if ip:
       log.info("[%s puerto %s] %s -> %s", dpid_to_str(event.dpid), event.port, ip.srcip, ip.dstip)
-      tcp = event.parsed.find('tcp')
 
       #Actualizo la tabla
       self.table[packet.src] = event.port
@@ -56,11 +58,11 @@ class SwitchController:
         print(shortest_path(self.graph, self.hosts[ip.srcip], dest))
 
         path = shortest_path(self.graph, self.hosts[ip.srcip], dest)
-        next_sw = path.popleft()
+        # next_sw = path.popleft()
 
-        portt = self.graph.get_port_to(dpid_to_str(event.dpid), next_sw)
-        # print(next_sw)
-        # print(portt)
+        # Intentando hacer lo que dice (1)
+        flow = Flow(ip.srcip, 80, ip.dstip, 80, ip.protocol)
+        self.pb.publishPath(flow, path)
 
         # (1) Lo que sigue deberia mandarse para guardar en todos los switches del path
         # porque de esta forma no funciona
@@ -70,24 +72,48 @@ class SwitchController:
 
         # Si no hay puerto, o sea que es el ultimo switch del camino y no sabes donde esta conectado,
         # hardcodear el puerto del s7-->h7 ( te lo dice links de mininet )
-        if portt is None:
-          msg = of.ofp_flow_mod()
-          msg.data = event.ofp
-          msg.match.dl_src = packet.src
-          msg.match.dl_dst = packet.dst
-          msg.actions.append(of.ofp_action_output(port=3))
-          event.connection.send(msg)
-
-        else:
-          msg = of.ofp_flow_mod()
-          msg.data = event.ofp
-          msg.match.dl_src = packet.src
-          msg.match.dl_dst = packet.dst
-          msg.actions.append(of.ofp_action_output(port=portt))
-          event.connection.send(msg)
+        # if portt is None:
+        #   msg = of.ofp_flow_mod()
+        #   msg.data = event.ofp
+        #   msg.match.dl_src = packet.src
+        #   msg.match.dl_dst = packet.dst
+        #   msg.actions.append(of.ofp_action_output(port=3))
+        #   event.connection.send(msg)
+        #
+        # else:
+        #   msg = of.ofp_flow_mod()
+        #   msg.data = event.ofp
+        #   msg.match.dl_src = packet.src
+        #   msg.match.dl_dst = packet.dst
+        #   msg.actions.append(of.ofp_action_output(port=portt))
+        #   event.connection.send(msg)
 
         # Fin (1)
 
-        # Intentando hacer lo que dice (1)
-        Flow(ip.srcip, tcp.srcport, ip.dstip, tcp.dstport, ip.protocol)
-        self.pb.publishEvent()
+  def update(self, flow, next_sw):
+    msg = of.ofp_flow_mod()
+    msg.match.nw_src = flow.src_ip
+    msg.match.nw_dst = flow.dst_ip
+    msg.match.tp_src = flow.src_port
+    msg.match.tp_dst = flow.dst_port
+    msg.actions.append(of.ofp_action_output(port=self.neighbour[next_sw]))
+    self.connection.send(msg)
+
+  def addLinkTo(self, dst_sw, src_port):
+    self.neighbour[dst_sw] = src_port
+
+  def removeLinkTo(self, dst_sw):
+    del self.neighbour[dst_sw]
+
+  #harcodeado
+  def forwardPortToHost(self, flow):
+    msg = of.ofp_flow_mod()
+    msg.match.nw_src = flow.src_ip
+    msg.match.nw_dst = flow.dst_ip
+    msg.match.tp_src = flow.src_port
+    msg.match.tp_dst = flow.dst_port
+    msg.actions.append(of.ofp_action_output(port=3))
+    self.connection.send(msg)
+
+
+
