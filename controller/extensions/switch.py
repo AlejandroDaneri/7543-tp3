@@ -1,6 +1,7 @@
 from pox.core import core
 from pox.lib.util import dpid_to_str
 import pox.openflow.libopenflow_01 as of
+import pox.lib.packet as pkt  # POX convention
 from extensions.dijkstra import shortest_path
 from extensions.flow import Flow
 
@@ -92,18 +93,16 @@ class SwitchController:
 
   def update(self, flow, next_sw):
     msg = of.ofp_flow_mod()
-    msg.data = ''
     msg.match.nw_src = flow.src_ip
     msg.match.nw_dst = flow.dst_ip
     msg.match.tp_src = flow.src_port
     msg.match.tp_dst = flow.dst_port
     msg.match.nw_proto = flow.protocol
-    msg.match.dl_type = 0x800
+    msg.match.dl_type = pkt.ethernet.IP_TYPE
     port = self.neighbour[next_sw]
     print("update", self.dpid, port)
     msg.actions.append(of.ofp_action_output(port=port))
     self.connection.send(msg)
-
 
   def addLinkTo(self, dst_sw, src_port):
     self.neighbour[dst_sw] = src_port
@@ -120,7 +119,7 @@ class SwitchController:
     msg.match.tp_src = flow.src_port
     msg.match.tp_dst = flow.dst_port
     msg.match.nw_proto = flow.protocol
-    msg.match.dl_type = 0x800
+    msg.match.dl_type = pkt.ethernet.IP_TYPE
     print("forward", self.dpid)
 
     msg.actions.append(of.ofp_action_output(port=3))
