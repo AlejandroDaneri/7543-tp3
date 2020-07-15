@@ -95,7 +95,7 @@ class Controller(EventMixin):
 
         i = 0
         while i < len(path)-1:
-            print("Entre al loop")
+            print("Estoy en el loop",i)
             sw_controller = self.switches[path[i]]
             sw_controller.update(flow, path[i+1])
             i += 1

@@ -47,9 +47,6 @@ class SwitchController:
       if ip.srcip not in self.hosts:
         self.hosts[ip.srcip] = dpid_to_str(event.dpid)
 
-
-
-
       # Hardcodeo de prueba, para saber magicamente el switch de h7 cuando hago X--ping->h7 en topo de 3 lvls
       if (ip.dstip == '10.0.0.7') or (ip.srcip in self.hosts):
         dest = '00-00-00-00-00-07'
@@ -59,46 +56,22 @@ class SwitchController:
         print("El camino minimo es:", shortest_path(self.graph, self.hosts[ip.srcip], dest))
 
         path = shortest_path(self.graph, self.hosts[ip.srcip], dest)
-        # next_sw = path.popleft()
 
-        # Intentando hacer lo que dice (1)
-        flow = Flow(ip.srcip, 80, ip.dstip, 80, ip.protocol)
+        # Lanzo evento para crear las reglas en todos los switches del camino (incluido este)
+        flow = Flow(ip.srcip, 80, ip.dstip, 80, ip.protocol, packet)
         self.pb.publishPath(flow, path)
 
-        # (1) Lo que sigue deberia mandarse para guardar en todos los switches del path
-        # porque de esta forma no funciona
-        # EJ: path (00-01,00-02, 00-07) y suponiendo que de s1 a s2 voy por puerto 3 y de s2 a s7,puerto 5
-        # entonces, decirle al s1 que el paquete con tal ip_src y tal ip_dest vaya puerto 3
-        # s2 con ese mismo ip_src y ip_dest vaya por puerto 5 ,etc
 
-        # Si no hay puerto, o sea que es el ultimo switch del camino y no sabes donde esta conectado,
-        # hardcodear el puerto del s7-->h7 ( te lo dice links de mininet )
-        # if portt is None:
-        #   msg = of.ofp_flow_mod()
-        #   msg.data = event.ofp
-        #   msg.match.dl_src = packet.src
-        #   msg.match.dl_dst = packet.dst
-        #   msg.actions.append(of.ofp_action_output(port=3))
-        #   event.connection.send(msg)
-        #
-        # else:
-        #   msg = of.ofp_flow_mod()
-        #   msg.data = event.ofp
-        #   msg.match.dl_src = packet.src
-        #   msg.match.dl_dst = packet.dst
-        #   msg.actions.append(of.ofp_action_output(port=portt))
-        #   event.connection.send(msg)
-
-        # Fin (1)
+        # Reenvio el paquete que genero el packetIn sacandolo por el puerto que matchea con la nueva regla
+        msg = of.ofp_packet_out()
+        msg.data = event.ofp
+        msg.actions.append(of.ofp_action_output(port=of.OFPP_TABLE))
+        self.connection.send(msg)
 
   def update(self, flow, next_sw):
     msg = of.ofp_flow_mod()
-    msg.match.nw_src = flow.src_ip
-    msg.match.nw_dst = flow.dst_ip
-    msg.match.tp_src = flow.src_port
-    msg.match.tp_dst = flow.dst_port
-    msg.match.nw_proto = flow.protocol
-    msg.match.dl_type = pkt.ethernet.IP_TYPE
+    msg.match.dl_src = flow.packet.src
+    msg.match.dl_dst = flow.packet.dst
     port = self.neighbour[next_sw]
     print("update", self.dpid, port)
     msg.actions.append(of.ofp_action_output(port=port))
@@ -113,16 +86,13 @@ class SwitchController:
   #harcodeado
   def forwardPortToHost(self, flow):
     msg = of.ofp_flow_mod()
-    msg.data = ''
-    msg.match.nw_src = flow.src_ip
-    msg.match.nw_dst = flow.dst_ip
-    msg.match.tp_src = flow.src_port
-    msg.match.tp_dst = flow.dst_port
-    msg.match.nw_proto = flow.protocol
-    msg.match.dl_type = pkt.ethernet.IP_TYPE
+    msg.match.dl_src = flow.packet.src
+    msg.match.dl_dst = flow.packet.dst
     print("forward", self.dpid)
 
-    msg.actions.append(of.ofp_action_output(port=3))
+    # Si va hacia el 10.0.0.7 se que tiene que salir por puerto 3, si vuelve hacia 10.0.0.1 por puerto 1, 10.0.0.2 al 2.. etc
+    port = 3 if flow.packet.find('ipv4').dstip == '10.0.0.7' else int(flow.packet.find('ipv4').dstip.toStr().split('.')[-1])
+    msg.actions.append(of.ofp_action_output(port=port))
     self.connection.send(msg)
 
 
