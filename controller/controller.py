@@ -14,6 +14,7 @@ from pox.lib.revent import *
 
 log = core.getLogger()
 
+
 class Controller(EventMixin):
 
     def __init__(self):
@@ -23,8 +24,9 @@ class Controller(EventMixin):
         self.graph = Graph()
         self.pb = Publisher()
         self.listenTo(core)
+        self._ecmp_last_index_used = {}
         # Esperando que los modulos openflow y openflow_discovery esten listos
-        core.call_when_ready(self.startup, ('openflow', 'openflow_discovery','host_tracker'))
+        core.call_when_ready(self.startup, ('openflow', 'openflow_discovery', 'host_tracker'))
 
     def startup(self):
         """
@@ -36,7 +38,6 @@ class Controller(EventMixin):
         core.openflow_discovery.addListeners(self)
         core.host_tracker.addListeners(self)
         core.addListeners(self)
-
         self.listenTo(self.pb)
 
         log.info('Controller initialized')
@@ -84,18 +85,34 @@ class Controller(EventMixin):
             except:
                 log.error("remove edge error")
 
+    def _get_latest_ECMP_index(self, src, dst, total):
+        if (src, dst) not in self._ecmp_last_index_used:
+            self._ecmp_last_index_used[(src, dst)] = 0
+        else:
+            if self._ecmp_last_index_used[(src, dst)] == total - 1:
+                self._ecmp_last_index_used[(src, dst)] = 0
+            else:
+                self._ecmp_last_index_used[(src, dst)] += 1
+        return self._ecmp_last_index_used[(src, dst)]
+
     # Calcula el ECMP adecuado e instala la ruta de L2 entre el Host origen y el destino
     def _handle_UpdateEvent(self, event):
         flow = event.flow
-        path = shortest_path(self.graph, str(flow.src_hw), str(flow.dst_hw))
+
+        # TODO the following method should return ALL possible shortest paths and not just one.
+        all_paths = [shortest_path(self.graph, str(flow.src_hw), str(flow.dst_hw))]
+        # TODO END of code that needs to change
+
+        index = self._get_latest_ECMP_index(str(flow.src_hw), str(flow.dst_hw), len(all_paths))
+        path = all_paths[index]
 
         i = 0
         while i < len(path):
-            print("Estoy en el loop",i)
+            print("Estoy en el loop", i)
             if path[i] in self.switches:
                 sw_controller = self.switches[path[i]]
-                next_hop = None if i == len(path) -1 else path[i+1]
-                sw_controller.update(flow, next_hop )
+                next_hop = None if i == len(path) - 1 else path[i + 1]
+                sw_controller.update(flow, next_hop)
             i += 1
 
     def _handle_HostEvent(self, event):
@@ -105,7 +122,7 @@ class Controller(EventMixin):
         i = None
         if len(event.entry.ipAddrs):
             i = event.entry.ipAddrs[0]
-        log.info("Event mac: %s,  switch %s, IP: %s" % (h,s, event.entry.ipAddrs))
+        log.info("Event mac: %s,  switch %s, IP: %s" % (h, s, event.entry.ipAddrs))
         log.info("Hosts detectados: %s", self.hosts)
         if event.leave:
             if h in self.hosts:
@@ -119,6 +136,7 @@ class Controller(EventMixin):
                 self.graph.add_node(h)
                 self.graph.add_edge(h, s)
                 self.graph.add_edge(s, h)
+
 
 def launch():
     # Inicializando el modulo openflow_discovery

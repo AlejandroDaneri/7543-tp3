@@ -41,7 +41,7 @@ class SwitchController:
                ip.dstip, str(packet.dst))
 
       # Identifico el Flow en base a IPs, Puertos y Protocolo
-      flow = Flow(ip.srcip, src_port, ip.dstip, dst_port, ip.protocol, packet.src, packet.dst, packet)
+      flow = Flow(ip.srcip, src_port, ip.dstip, dst_port, ip.protocol, packet.src, packet.dst)
       self.pb.publishPath(flow)
 
       # Reenvio el paquete que genero el packetIn sacandolo por el puerto que matchea con la nueva regla
@@ -54,10 +54,23 @@ class SwitchController:
                str(packet.dst))
 
 
-  def update(self, flow, next_hop):
+  def update(self, flow, next_hop, ip_routing=True):
     msg = of.ofp_flow_mod()
-    msg.match.dl_src = flow.src_hw
-    msg.match.dl_dst = flow.dst_hw
+    if not ip_routing:
+      # Aplicon Routing a nivel L2, solamente considerando mac addresses
+      # Esto no me permite implementar ECMP porque siempre van a ir de un src a un dst
+      # por el mismo lugar
+      msg.match.dl_src = flow.src_hw
+      msg.match.dl_dst = flow.dst_hw
+    else:
+      print("Protocol: %s" % str(flow.protocol))
+      #msg.match.nw_proto = flow.protocol
+      msg.match.dl_type = 0x800
+      msg.match.nw_dst = flow.dst_ip
+      msg.match.nw_src = flow.src_ip
+      msg.match.tp_dst = flow.dst_port
+      msg.match.tp_src = flow.src_port
+
     if next_hop in self.neighbour:
       port = self.neighbour[next_hop]
       print("update", self.dpid, port)
