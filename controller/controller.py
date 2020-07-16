@@ -79,6 +79,7 @@ class Controller(EventMixin):
         elif event.removed:
             try:
                 self.graph.remove_edge(src_sw, dst_sw)
+                # TODO: con la linea siguiente solo borramos de las tablas este link especifico
                 self.switches[src_sw].removeLinkTo(dst_sw)
                 log.info('link removed [%s:%s] -> [%s:%s]', src_sw, src_port, dst_sw, dst_port)
             except:
