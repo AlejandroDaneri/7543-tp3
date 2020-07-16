@@ -5,7 +5,7 @@ import pox.forwarding.l2_learning
 from pox.lib.util import dpid_to_str
 from extensions.switch import SwitchController
 from extensions.graph import Graph
-
+from pox.host_tracker import host_tracker
 from extensions.publisher import Publisher
 
 from pox.core import core
@@ -21,12 +21,9 @@ class Controller(EventMixin):
         self.hosts = {}  # host: switch al que se conecto
         self.graph = Graph()
         self.pb = Publisher()
-
         self.listenTo(core)
-
-
         # Esperando que los modulos openflow y openflow_discovery esten listos
-        core.call_when_ready(self.startup, ('openflow', 'openflow_discovery'))
+        core.call_when_ready(self.startup, ('openflow', 'openflow_discovery','host_tracker'))
 
     def startup(self):
         """
@@ -36,7 +33,7 @@ class Controller(EventMixin):
         """
         core.openflow.addListeners(self)
         core.openflow_discovery.addListeners(self)
-
+        core.host_tracker.addListeners(self)
         core.addListeners(self)
 
         self.listenTo(self.pb)
@@ -70,7 +67,6 @@ class Controller(EventMixin):
         dst_sw = dpid_to_str(link.dpid2)
         src_port = link.port1
         dst_port = link.port2
-        log.info("Hosts detectados: %s", self.hosts)
         if event.added:
             try:
                 self.graph.add_edge(src_sw, dst_sw)
@@ -87,24 +83,47 @@ class Controller(EventMixin):
             except:
                 log.error("remove edge error")
 
-    # Capturando el evento de prueba
+    # Instala la ruta de L2 entre el Host origen y el destino
     def _handle_TestEvent(self, event):
         log.info("Escuche el evento\n")
         flow = event.flow
         path = event.path
-
         i = 0
-        while i < len(path)-1:
+        while i < len(path):
             print("Estoy en el loop",i)
-            sw_controller = self.switches[path[i]]
-            sw_controller.update(flow, path[i+1])
+            if path[i] in self.switches:
+                sw_controller = self.switches[path[i]]
+                next_hop = None if i == len(path) -1 else path[i+1]
+                sw_controller.update(flow, next_hop )
             i += 1
 
-        self.switches[path[i]].forwardPortToHost(flow)
+    def _handle_HostEvent(self, event):
+        h = str(event.entry.macaddr)
+        s = dpid_to_str(event.entry.dpid)
+        p = event.entry.port
+        i = None
+        if len(event.entry.ipAddrs):
+            i = event.entry.ipAddrs[0]
+        log.info("Event mac: %s,  switch %s, IP: %s" % (h,s, event.entry.ipAddrs))
+        log.info("Hosts detectados: %s", self.hosts)
+        if event.leave:
+            if h in self.hosts:
+                del self.hosts[h]
+            if h in self.graph.nodes():
+                self.graph.remove_node(h)
+        else:
+            if h not in self.hosts:
+                self.hosts[h] = p
+            if h not in self.graph.nodes():
+                self.graph.add_node(h)
+                self.graph.add_edge(h, s)
+                self.graph.add_edge(s, h)
 
 def launch():
     # Inicializando el modulo openflow_discovery
     pox.openflow.discovery.launch()
+    from host_tracker import launch
+    launch()
 
     # Registrando el Controller en pox.core para que sea ejecutado
     core.registerNew(Controller)
