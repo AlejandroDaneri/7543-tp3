@@ -7,6 +7,7 @@ from extensions.switch import SwitchController
 from extensions.graph import Graph
 from pox.host_tracker import host_tracker
 from extensions.publisher import Publisher
+from extensions.dijkstra import shortest_path
 
 from pox.core import core
 from pox.lib.revent import *
@@ -50,7 +51,7 @@ class Controller(EventMixin):
 
         if event.connection not in self.connections:
             self.connections.add(event.connection)
-            sw = SwitchController(event.dpid, event.connection, self.graph, self.hosts, self.pb)
+            sw = SwitchController(event.dpid, event.connection, self.hosts, self.pb)
             self.switches[dpid_to_str(event.dpid)] = sw
 
     def _handle_ConnectionDown(self, event):
@@ -83,11 +84,11 @@ class Controller(EventMixin):
             except:
                 log.error("remove edge error")
 
-    # Instala la ruta de L2 entre el Host origen y el destino
-    def _handle_TestEvent(self, event):
-        log.info("Escuche el evento\n")
+    # Calcula el ECMP adecuado e instala la ruta de L2 entre el Host origen y el destino
+    def _handle_UpdateEvent(self, event):
         flow = event.flow
-        path = event.path
+        path = shortest_path(self.graph, str(flow.src_hw), str(flow.dst_hw))
+
         i = 0
         while i < len(path):
             print("Estoy en el loop",i)

@@ -2,7 +2,6 @@ from pox.core import core
 from pox.lib.util import dpid_to_str
 import pox.openflow.libopenflow_01 as of
 import pox.lib.packet as pkt  # POX convention
-from extensions.dijkstra import shortest_path
 from extensions.flow import Flow
 from pox.lib.packet.ipv4 import ipv4
 from pox.lib.packet.udp import udp
@@ -11,13 +10,12 @@ from pox.lib.packet.tcp import tcp
 log = core.getLogger()
 
 class SwitchController:
-  def __init__(self, dpid, connection, graph, hosts,pb):
+  def __init__(self, dpid, connection,  hosts,pb):
     self.dpid = dpid_to_str(dpid)
     self.connection = connection
     # El SwitchController se agrega como handler de los eventos del switch
     self.connection.addListeners(self)
     self.pb = pb
-    self.graph = graph
     self.hosts = hosts
 
     # switch_vecino: puerto para llegar
@@ -41,14 +39,10 @@ class SwitchController:
     if ip:
       log.info("[%s puerto %s] %s (%s) -> %s (%s)", dpid_to_str(event.dpid), event.port, ip.srcip,str(packet.src),
                ip.dstip, str(packet.dst))
-      # Identifico el Flow en base a IPs, Puertos y Protocolo
-      #TODO: Implementar ECMP aqui
-      flow = Flow(ip.srcip, src_port, ip.dstip, dst_port, ip.protocol, packet.src, packet.dst, packet)
-      flow_id = flow.flow_id()
-      path = shortest_path(self.graph, str(packet.src), str(packet.dst))
-      log.debug("El camino minimo es:", path)
 
-      self.pb.publishPath(flow, path)
+      # Identifico el Flow en base a IPs, Puertos y Protocolo
+      flow = Flow(ip.srcip, src_port, ip.dstip, dst_port, ip.protocol, packet.src, packet.dst, packet)
+      self.pb.publishPath(flow)
 
       # Reenvio el paquete que genero el packetIn sacandolo por el puerto que matchea con la nueva regla
       msg = of.ofp_packet_out()
