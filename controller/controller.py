@@ -73,7 +73,6 @@ class Controller(EventMixin):
             try:
                 self.graph.add_edge(src_sw, dst_sw)
                 self.switches[src_sw].addLinkTo(dst_sw, src_port)
-                # ya lo logea el discover pero para testear
                 log.info('link added: [%s:%s] -> [%s:%s]', src_sw, src_port, dst_sw, dst_port)
             except:
                 log.error("add edge error")

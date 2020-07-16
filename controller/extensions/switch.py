@@ -27,8 +27,8 @@ class SwitchController:
     y no encuentra en su tabla una regla para rutearlo
     """
     packet = event.parsed
-    src_port = 80
-    dst_port = 80
+    src_port = None
+    dst_port = None
     ip = None
     if isinstance(packet.next, ipv4):
       ip = packet.next
@@ -64,12 +64,15 @@ class SwitchController:
       msg.match.dl_dst = flow.dst_hw
     else:
       print("Protocol: %s" % str(flow.protocol))
-      #msg.match.nw_proto = flow.protocol
-      msg.match.dl_type = 0x800
+
+      msg.match.dl_type = pkt.ethernet.IP_TYPE
       msg.match.nw_dst = flow.dst_ip
       msg.match.nw_src = flow.src_ip
-      msg.match.tp_dst = flow.dst_port
-      msg.match.tp_src = flow.src_port
+
+      if (flow.protocol == pkt.ipv4.TCP_PROTOCOL) or (flow.protocol == pkt.ipv4.UDP_PROTOCOL):
+        msg.match.nw_proto = flow.protocol
+        msg.match.tp_dst = flow.dst_port
+        msg.match.tp_src = flow.src_port
 
     if next_hop in self.neighbour:
       port = self.neighbour[next_hop]
