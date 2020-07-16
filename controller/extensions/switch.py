@@ -4,6 +4,9 @@ import pox.openflow.libopenflow_01 as of
 import pox.lib.packet as pkt  # POX convention
 from extensions.dijkstra import shortest_path
 from extensions.flow import Flow
+from pox.lib.packet.ipv4 import ipv4
+from pox.lib.packet.udp import udp
+from pox.lib.packet.tcp import tcp
 
 log = core.getLogger()
 
@@ -26,15 +29,25 @@ class SwitchController:
     y no encuentra en su tabla una regla para rutearlo
     """
     packet = event.parsed
-    ip = packet.find('ipv4')
+    src_port = 80
+    dst_port = 80
+    ip = None
+    if isinstance(packet.next, ipv4):
+      ip = packet.next
+      if isinstance(ip.next, tcp) or isinstance(ip.next, udp):
+        src_port = ip.next.srcport
+        dst_port = ip.next.dstport
+
     if ip:
       log.info("[%s puerto %s] %s (%s) -> %s (%s)", dpid_to_str(event.dpid), event.port, ip.srcip,str(packet.src),
                ip.dstip, str(packet.dst))
+      # Identifico el Flow en base a IPs, Puertos y Protocolo
+      #TODO: Implementar ECMP aqui
+      flow = Flow(ip.srcip, src_port, ip.dstip, dst_port, ip.protocol, packet.src, packet.dst, packet)
+      flow_id = flow.flow_id()
       path = shortest_path(self.graph, str(packet.src), str(packet.dst))
-      print("El camino minimo es:", path)
+      log.debug("El camino minimo es:", path)
 
-      # Lanzo evento para crear las reglas en todos los switches del camino (incluido este)
-      flow = Flow(ip.srcip, 80, ip.dstip, 80, ip.protocol, packet)
       self.pb.publishPath(flow, path)
 
       # Reenvio el paquete que genero el packetIn sacandolo por el puerto que matchea con la nueva regla
@@ -42,16 +55,20 @@ class SwitchController:
       msg.data = event.ofp
       msg.actions.append(of.ofp_action_output(port=of.OFPP_TABLE))
       self.connection.send(msg)
+    else:
+      log.info("Ignorando [%s puerto %s] (%s) -> (%s)", dpid_to_str(event.dpid), event.port, str(packet.src),
+               str(packet.dst))
+
 
   def update(self, flow, next_hop):
     msg = of.ofp_flow_mod()
-    msg.match.dl_src = flow.packet.src
-    msg.match.dl_dst = flow.packet.dst
+    msg.match.dl_src = flow.src_hw
+    msg.match.dl_dst = flow.dst_hw
     if next_hop in self.neighbour:
       port = self.neighbour[next_hop]
       print("update", self.dpid, port)
     else:
-      port = self.hosts[str(flow.packet.dst)]
+      port = self.hosts[str(flow.dst_hw)]
       print("forward", self.dpid)
     msg.actions.append(of.ofp_action_output(port=port))
     self.connection.send(msg)
