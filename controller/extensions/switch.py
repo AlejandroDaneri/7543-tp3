@@ -1,7 +1,7 @@
 from pox.core import core
 from pox.lib.util import dpid_to_str
 import pox.openflow.libopenflow_01 as of
-import pox.lib.packet as pkt  # POX convention
+import pox.lib.packet as pkt
 from extensions.flow import Flow
 from pox.lib.packet.ipv4 import ipv4
 from pox.lib.packet.udp import udp
@@ -37,7 +37,7 @@ class SwitchController:
         dst_port = ip.next.dstport
 
     if ip:
-      log.info("[%s puerto %s] %s (%s) -> %s (%s)", dpid_to_str(event.dpid), event.port, ip.srcip,str(packet.src),
+      log.info("[%s puerto %s] %s (%s) -> %s (%s)", dpid_to_str(event.dpid), event.port, ip.srcip, str(packet.src),
                ip.dstip, str(packet.dst))
 
       # Identifico el Flow en base a IPs, Puertos y Protocolo
@@ -87,6 +87,13 @@ class SwitchController:
     self.neighbour[dst_sw] = src_port
 
   def removeLinkTo(self, dst_sw):
+    self.removeRuleTo(self.neighbour[dst_sw])
     del self.neighbour[dst_sw]
+
+  def removeRuleTo(self, out_port):
+    print("Eliminando")
+    msg = of.ofp_flow_mod(command=of.OFPFC_DELETE)
+    msg.out_port = out_port
+    self.connection.send(msg)
 
 
