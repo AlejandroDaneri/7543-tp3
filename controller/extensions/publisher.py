@@ -11,16 +11,16 @@ class Publisher(EventMixin):
 
     def __init__(self):
         self.listenTo(core)
-        print("Publisher is initialed\n")
+        #print("Publisher is initialed\n")
 
     def _handle_GoingUpEvent(self, event):
         self.listenTo(core.openflow)
-        print("this is in publisher, what is this for?\n")
+        #print("this is in publisher, what is this for?\n")
 
     def publishPath(self, flow):
-        print("Voy a lanzar el evento\n")
+        #print("Voy a lanzar el evento\n")
         self.raiseEvent(UpdateEvent, flow)
-        print("Evento lanzado\n")
+        #print("Evento lanzado\n")
 
 
 def launch():

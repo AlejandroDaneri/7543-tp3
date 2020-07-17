@@ -10,14 +10,12 @@ from pox.lib.packet.tcp import tcp
 log = core.getLogger()
 
 class SwitchController:
-  def __init__(self, dpid, connection,  hosts,pb):
+  def __init__(self, dpid, connection, controller):
     self.dpid = dpid_to_str(dpid)
     self.connection = connection
     # El SwitchController se agrega como handler de los eventos del switch
     self.connection.addListeners(self)
-    self.pb = pb
-    self.hosts = hosts
-
+    self.network_controller = controller
     # switch_vecino: puerto para llegar
     self.neighbour = {}
 
@@ -37,25 +35,25 @@ class SwitchController:
         dst_port = ip.next.dstport
 
     if ip:
-      log.info("[%s puerto %s] %s (%s) -> %s (%s)", dpid_to_str(event.dpid), event.port, ip.srcip, str(packet.src),
+      log.debug("[%s puerto %s] %s (%s) -> %s (%s)", dpid_to_str(event.dpid), event.port, ip.srcip, str(packet.src),
                ip.dstip, str(packet.dst))
 
       # Identifico el Flow en base a IPs, Puertos y Protocolo
       flow = Flow(ip.srcip, src_port, ip.dstip, dst_port, ip.protocol, packet.src, packet.dst)
-      self.pb.publishPath(flow)
-
-      # Reenvio el paquete que genero el packetIn sacandolo por el puerto que matchea con la nueva regla
-      msg = of.ofp_packet_out()
-      msg.data = event.ofp
-      msg.actions.append(of.ofp_action_output(port=of.OFPP_TABLE))
-      self.connection.send(msg)
+      #self.network_controller.publishPath(flow)
+      if self.network_controller.actualizaPath(flow):
+        # Reenvio el paquete que genero el packetIn sacandolo por el puerto que matchea con la nueva regla
+        msg = of.ofp_packet_out()
+        msg.data = event.ofp
+        msg.actions.append(of.ofp_action_output(port=of.OFPP_TABLE))
+        self.connection.send(msg)
     else:
-      log.info("Ignorando [%s puerto %s] (%s) -> (%s)", dpid_to_str(event.dpid), event.port, str(packet.src),
+      log.debug("Ignorando [%s puerto %s] (%s) -> (%s)", dpid_to_str(event.dpid), event.port, str(packet.src),
                str(packet.dst))
 
 
   def update(self, flow, next_hop, ip_routing=True):
-    msg = of.ofp_flow_mod()
+    msg = of.ofp_flow_mod(flags=of.OFPFF_SEND_FLOW_REM)
     if not ip_routing:
       # Aplicon Routing a nivel L2, solamente considerando mac addresses
       # Esto no me permite implementar ECMP porque siempre van a ir de un src a un dst
@@ -63,23 +61,23 @@ class SwitchController:
       msg.match.dl_src = flow.src_hw
       msg.match.dl_dst = flow.dst_hw
     else:
-      print("Protocol: %s" % str(flow.protocol))
+      #print("Protocol: %s" % str(flow.protocol))
 
       msg.match.dl_type = pkt.ethernet.IP_TYPE
       msg.match.nw_dst = flow.dst_ip
       msg.match.nw_src = flow.src_ip
+      msg.match.nw_proto = flow.protocol
 
       if (flow.protocol == pkt.ipv4.TCP_PROTOCOL) or (flow.protocol == pkt.ipv4.UDP_PROTOCOL):
-        msg.match.nw_proto = flow.protocol
         msg.match.tp_dst = flow.dst_port
         msg.match.tp_src = flow.src_port
 
     if next_hop in self.neighbour:
       port = self.neighbour[next_hop]
-      print("update", self.dpid, port)
+      #print("update", self.dpid, port)
     else:
-      port = self.hosts[str(flow.dst_hw)]
-      print("forward", self.dpid)
+      port = self.network_controller.get_hosts()[str(flow.dst_hw)]
+      #print("forward", self.dpid)
     msg.actions.append(of.ofp_action_output(port=port))
     self.connection.send(msg)
 
@@ -87,13 +85,19 @@ class SwitchController:
     self.neighbour[dst_sw] = src_port
 
   def removeLinkTo(self, dst_sw):
-    self.removeRuleTo(self.neighbour[dst_sw])
+    self.removeRuleByPort(self.neighbour[dst_sw])
     del self.neighbour[dst_sw]
 
-  def removeRuleTo(self, out_port):
-    print("Eliminando")
+  def removeRuleByPort(self, port):
     msg = of.ofp_flow_mod(command=of.OFPFC_DELETE)
-    msg.out_port = out_port
+    log.info  ("Elimino regla en switch %s por puerto %d" % (self.dpid, port,))
+    msg.out_port = port
+    self.connection.send(msg)
+
+  def removeRuleByFlow(self, flow):
+    log.debug("Elimino flow %s " % str(flow))
+    msg = of.ofp_flow_mod(command=of.OFPFC_DELETE)
+    msg.match = flow.match
     self.connection.send(msg)
 
 

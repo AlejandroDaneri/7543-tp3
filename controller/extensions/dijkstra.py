@@ -62,5 +62,7 @@ def _find_all_paths(graph, src, dst, path=[]):
 def find_all_paths(graph, src, dst):
     """Encuentra todos los paths y elije los de menor tamanio"""
     paths = _find_all_paths(graph, src, dst)
+    if not paths:
+        return None
     minimum_length = min([len(path) for path in paths])
     return deque([path for path in paths if len(path) == minimum_length])
