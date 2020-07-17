@@ -55,13 +55,13 @@ class SwitchController:
   def update(self, flow, next_hop, ip_routing=True):
     msg = of.ofp_flow_mod(flags=of.OFPFF_SEND_FLOW_REM)
     if not ip_routing:
-      # Aplicon Routing a nivel L2, solamente considerando mac addresses
+      # Aplico Routing a nivel L2, solamente considerando mac addresses
       # Esto no me permite implementar ECMP porque siempre van a ir de un src a un dst
       # por el mismo lugar
       msg.match.dl_src = flow.src_hw
       msg.match.dl_dst = flow.dst_hw
     else:
-      #print("Protocol: %s" % str(flow.protocol))
+      log.debug("Protocol: %s" % str(flow.protocol))
 
       msg.match.dl_type = pkt.ethernet.IP_TYPE
       msg.match.nw_dst = flow.dst_ip
@@ -74,10 +74,10 @@ class SwitchController:
 
     if next_hop in self.neighbour:
       port = self.neighbour[next_hop]
-      #print("update", self.dpid, port)
+      log.debug("update", self.dpid, port)
     else:
       port = self.network_controller.get_hosts()[str(flow.dst_hw)]
-      #print("forward", self.dpid)
+      log.debug("forward", self.dpid)
     msg.actions.append(of.ofp_action_output(port=port))
     self.connection.send(msg)
 
@@ -90,7 +90,7 @@ class SwitchController:
 
   def removeRuleByPort(self, port):
     msg = of.ofp_flow_mod(command=of.OFPFC_DELETE)
-    log.info  ("Elimino regla en switch %s por puerto %d" % (self.dpid, port,))
+    log.info("Elimino regla en switch %s por puerto %d" % (self.dpid, port,))
     msg.out_port = port
     self.connection.send(msg)
 

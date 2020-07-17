@@ -1,11 +1,7 @@
-from pox.core import core
 import pox.openflow.discovery
-import pox.openflow.spanning_tree
-import pox.forwarding.l2_learning
 from pox.lib.util import dpid_to_str
 from extensions.switch import SwitchController
 from extensions.graph import Graph
-from pox.host_tracker import host_tracker
 from extensions.dijkstra import shortest_path, find_all_paths
 
 from pox.core import core
@@ -20,7 +16,7 @@ class Controller(EventMixin):
         self.connections = set()
         self.switches = {}
         self.hosts = {}  # host: switch al que se conecto
-        self.graph = Graph(debug=False)
+        self.graph = Graph()
         self._ecmp_last_index_used = {}
         # Esperando que los modulos openflow ,openflow_discovery y host_tracker esten listos
         core.call_when_ready(self.startup, ('openflow', 'openflow_discovery', 'host_tracker'))
