@@ -1,6 +1,5 @@
 from collections import deque
 
-
 def shortest_path(graph, src, dst):
     # 1. Mark all nodes unvisited and store them.
     # 2. Set the distance to zero for our initial node
@@ -45,3 +44,23 @@ def shortest_path(graph, src, dst):
     if path:
         path.appendleft(current_vertex)
     return path
+
+def _find_all_paths(graph, src, dst, path=[]):
+    path = path + [src]
+    if src == dst:
+        return [path]
+    if src not in graph.nodes():
+        return []
+    paths = []
+    for vertex in graph.neighbours(src):
+        if vertex not in path:
+            extended_paths = _find_all_paths(graph, vertex, dst, path)
+            for p in extended_paths: 
+                paths.append(p)
+    return paths
+
+def find_all_paths(graph, src, dst):
+    """Encuentra todos los paths y elije los de menor tamanio"""
+    paths = _find_all_paths(graph, src, dst)
+    minimum_length = min([len(path) for path in paths])
+    return deque([path for path in paths if len(path) == minimum_length])

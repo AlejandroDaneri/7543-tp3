@@ -7,7 +7,7 @@ from extensions.switch import SwitchController
 from extensions.graph import Graph
 from pox.host_tracker import host_tracker
 from extensions.publisher import Publisher
-from extensions.dijkstra import shortest_path
+from extensions.dijkstra import shortest_path, find_all_paths
 
 from pox.core import core
 from pox.lib.revent import *
@@ -99,7 +99,8 @@ class Controller(EventMixin):
         flow = event.flow
 
         # TODO the following method should return ALL possible shortest paths and not just one.
-        all_paths = [shortest_path(self.graph, str(flow.src_hw), str(flow.dst_hw))]
+        #all_paths = [shortest_path(self.graph, str(flow.src_hw), str(flow.dst_hw))]
+        all_paths = find_all_paths(self.graph, str(flow.src_hw), str(flow.dst_hw))
         # TODO END of code that needs to change
 
         index = self._get_latest_ECMP_index(str(flow.src_hw), str(flow.dst_hw), len(all_paths))
