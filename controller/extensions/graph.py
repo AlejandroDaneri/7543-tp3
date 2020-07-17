@@ -4,7 +4,7 @@ class Graph:
         # Como clave tiene la MAC de un switch y como valor
         # un array de tuplas (sw,port) que indica con que port llega al sw
         self.dict = {}
-        self.debug = debug
+        self.debug = debug  # tal vez usar log.debug?
 
     def add_node(self, node):
         if node not in self.dict:

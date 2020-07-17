@@ -6,7 +6,6 @@ from pox.lib.util import dpid_to_str
 from extensions.switch import SwitchController
 from extensions.graph import Graph
 from pox.host_tracker import host_tracker
-from extensions.publisher import Publisher
 from extensions.dijkstra import shortest_path, find_all_paths
 
 from pox.core import core
@@ -22,10 +21,8 @@ class Controller(EventMixin):
         self.switches = {}
         self.hosts = {}  # host: switch al que se conecto
         self.graph = Graph(debug=False)
-        self.pb = Publisher()
-        self.listenTo(core)
         self._ecmp_last_index_used = {}
-        # Esperando que los modulos openflow y openflow_discovery esten listos
+        # Esperando que los modulos openflow ,openflow_discovery y host_tracker esten listos
         core.call_when_ready(self.startup, ('openflow', 'openflow_discovery', 'host_tracker'))
 
     def get_hosts(self):
@@ -42,7 +39,6 @@ class Controller(EventMixin):
         core.host_tracker.addListeners(self)
         core.addListeners(self)
         core.openflow.addListenerByName("FlowRemoved", self._handle_flow_removal)
-        self.listenTo(self.pb)
 
         log.info('Controller initialized')
 
@@ -95,7 +91,7 @@ class Controller(EventMixin):
                 self.switches[src_sw].removeLinkTo(dst_sw)
                 log.info('link removed [%s:%s] -> [%s:%s]', src_sw, src_port, dst_sw, dst_port)
             except Exception as e:
-                log.error("remove edge error: %" % str(e))
+                log.error("remove edge error: %s" % str(e))
 
     def _get_latest_ECMP_index(self, src, dst, total):
         if (src, dst) not in self._ecmp_last_index_used:
@@ -107,11 +103,8 @@ class Controller(EventMixin):
                 self._ecmp_last_index_used[(src, dst)] += 1
         return self._ecmp_last_index_used[(src, dst)]
 
-    def publishPath(self,f):
-        self.pb.publishPath(f)
-
     # Calcula el ECMP adecuado e instala la ruta de L2 entre el Host origen y el destino
-    def actualizaPath(self,flow):
+    def actualizaPath(self, flow):
         # all_paths = [shortest_path(self.graph, str(flow.src_hw), str(flow.dst_hw))]
         all_paths = find_all_paths(self.graph, str(flow.src_hw), str(flow.dst_hw))
         if not all_paths:
@@ -122,17 +115,13 @@ class Controller(EventMixin):
 
         i = 0
         while i < len(path):
-            # print("Estoy en el loop", i)
+            # log.debug("Estoy en el loop", i)
             if path[i] in self.switches:
                 sw_controller = self.switches[path[i]]
                 next_hop = None if i == len(path) - 1 else path[i + 1]
                 sw_controller.update(flow, next_hop)
             i += 1
         return True
-
-    def _handle_UpdateEvent(self, event):
-        flow = event.flow
-        self.actualizaPath(flow)
 
 
     def _handle_HostEvent(self, event):
@@ -142,8 +131,8 @@ class Controller(EventMixin):
         i = None
         if len(event.entry.ipAddrs):
             i = event.entry.ipAddrs[0]
-        #log.info("Event mac: %s,  switch %s, IP: %s" % (h, s, event.entry.ipAddrs))
-        #log.info("Hosts detectados: %s", self.hosts)
+        #log.debug("Event mac: %s,  switch %s, IP: %s" % (h, s, event.entry.ipAddrs))
+        #log.debug("Hosts detectados: %s", self.hosts)
         if event.leave:
             if h in self.hosts:
                 del self.hosts[h]

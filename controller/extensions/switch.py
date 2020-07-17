@@ -16,8 +16,7 @@ class SwitchController:
     # El SwitchController se agrega como handler de los eventos del switch
     self.connection.addListeners(self)
     self.network_controller = controller
-    # switch_vecino: puerto para llegar
-    self.neighbour = {}
+    self.neighbour = {} # switch_vecino: puerto para llegar
 
   def _handle_PacketIn(self, event):
     """
@@ -34,13 +33,14 @@ class SwitchController:
         src_port = ip.next.srcport
         dst_port = ip.next.dstport
 
+    # Si el paquete es IPv4
     if ip:
       log.debug("[%s puerto %s] %s (%s) -> %s (%s)", dpid_to_str(event.dpid), event.port, ip.srcip, str(packet.src),
                ip.dstip, str(packet.dst))
 
       # Identifico el Flow en base a IPs, Puertos y Protocolo
       flow = Flow(ip.srcip, src_port, ip.dstip, dst_port, ip.protocol, packet.src, packet.dst)
-      #self.network_controller.publishPath(flow)
+
       if self.network_controller.actualizaPath(flow):
         # Reenvio el paquete que genero el packetIn sacandolo por el puerto que matchea con la nueva regla
         msg = of.ofp_packet_out()
