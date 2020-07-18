@@ -3,7 +3,7 @@ from pox.lib.util import dpid_to_str
 from extensions.switch import SwitchController
 #from extensions.graph import Graph
 from extensions.dijkstra import find_all_paths
-from networkx import Graph, all_shortest_paths
+from networkx import DiGraph, all_shortest_paths
 import threading
 
 from pox.core import core
@@ -18,7 +18,7 @@ class Controller(EventMixin):
         self.switches = {}
         self.flows = {}
         self.hosts = {}  # host: switch al que se conecto
-        self.graph = Graph()
+        self.graph = DiGraph()
         self._ecmp_last_index_used = {}
         # Esperando que los modulos openflow ,openflow_discovery y host_tracker esten listos
         core.call_when_ready(self.startup, ('openflow', 'openflow_discovery', 'host_tracker'))
@@ -77,8 +77,8 @@ class Controller(EventMixin):
                 self.graph.add_edge(src_sw, dst_sw)
                 self.switches[src_sw].addLinkTo(dst_sw, src_port)
                 log.info('link added: [%s:%s] -> [%s:%s]', src_sw, src_port, dst_sw, dst_port)
-            except:
-                log.error("add edge error")
+            except Exception as e:
+                log.error("add edge error: %s" % str(e))
         elif event.removed:
             try:
                 self.graph.remove_edge(src_sw, dst_sw)
