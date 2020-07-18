@@ -80,9 +80,6 @@ class Controller(EventMixin):
                 log.error("add edge error: %s" % str(e))
         elif event.removed:
             try:
-                print(src_sw)
-                print(dst_sw)
-
                 self.graph.remove_edge(src_sw, dst_sw)
                 self.switches[src_sw].removeLinkTo(dst_sw)
                 log.info('link removed [%s:%s] -> [%s:%s]', src_sw, src_port, dst_sw, dst_port)
