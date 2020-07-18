@@ -146,7 +146,7 @@ def launch():
     # Inicializando el modulo openflow_discovery
     pox.openflow.discovery.launch()
     from host_tracker import launch
-    launch()
+    launch(arpSilent=45)
 
     # Registrando el Controller en pox.core para que sea ejecutado
     core.registerNew(Controller)
