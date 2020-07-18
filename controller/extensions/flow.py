@@ -19,6 +19,6 @@ class Flow:
         hash_input[0] = self.src_ip.toUnsigned()
         hash_input[1] = self.dst_ip.toUnsigned()
         hash_input[2] = self.protocol
-        hash_input[3] = self.src_port
-        hash_input[4] = self.dst_port
+        hash_input[3] = self.src_port if self.src_port else 0
+        hash_input[4] = self.dst_port if self.dst_port else 0
         return crc32(pack('LLHHH', *hash_input))
