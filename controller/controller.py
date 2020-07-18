@@ -115,7 +115,7 @@ class Controller(EventMixin):
     def validate_and_install(self, flow):
         flow_id = flow.flow_id()
         if flow_id not in self.flows:
-            self.flows[flow_id]={}
+            self.flows[flow_id] = {}
             self.flows[flow_id]['installed'] = False
             self.flows[flow_id]['lock'] = threading.Lock()
 
@@ -124,8 +124,10 @@ class Controller(EventMixin):
             if self.flows[flow_id]['installed']:
                 return True
 
-            path = self._find_path(flow)
-            if path is None:
+            try:
+                path = self._find_path(flow)
+            except:
+                log.warn("No se puede llegar al destino")
                 return False
             i = 0
             while i < len(path):
