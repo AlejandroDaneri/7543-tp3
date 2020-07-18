@@ -4,7 +4,7 @@ from extensions.switch import SwitchController
 #from extensions.graph import Graph
 from extensions.dijkstra import find_all_paths
 from networkx import Graph, all_shortest_paths
-
+import threading
 
 from pox.core import core
 from pox.lib.revent import *
@@ -16,6 +16,7 @@ class Controller(EventMixin):
     def __init__(self):
         self.connections = set()
         self.switches = {}
+        self.flows = {}
         self.hosts = {}  # host: switch al que se conecto
         self.graph = Graph()
         self._ecmp_last_index_used = {}
@@ -111,18 +112,30 @@ class Controller(EventMixin):
         return path
 
     # Instalo las reglas que matcheen con el flow especifico para todos los switches del path
-    def install(self, flow):
-        path = self._find_path(flow)
-        if path is None:
-            return False
-        i = 0
-        while i < len(path):
-            log.debug("Estoy en el loop instalando reglas", i)
-            if path[i] in self.switches:
-                sw_controller = self.switches[path[i]]
-                next_hop = None if i == len(path) - 1 else path[i + 1]
-                sw_controller.update(flow, next_hop)
-            i += 1
+    def validate_and_install(self, flow):
+        flow_id = flow.flow_id()
+        if flow_id not in self.flows:
+            self.flows[flow_id]={}
+            self.flows[flow_id]['installed'] = False
+            self.flows[flow_id]['lock'] = threading.Lock()
+
+        with self.flows[flow_id]['lock']:
+            # Verifico si el flow se encuentra instalado
+            if self.flows[flow_id]['installed']:
+                return True
+
+            path = self._find_path(flow)
+            if path is None:
+                return False
+            i = 0
+            while i < len(path):
+                log.debug("Estoy en el loop instalando reglas", i)
+                if path[i] in self.switches:
+                    sw_controller = self.switches[path[i]]
+                    next_hop = None if i == len(path) - 1 else path[i + 1]
+                    sw_controller.update(flow, next_hop)
+                i += 1
+            self.flows[flow_id]['installed'] = True
         return True
 
     def _handle_HostEvent(self, event):

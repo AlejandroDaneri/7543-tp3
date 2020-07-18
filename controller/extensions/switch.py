@@ -41,8 +41,9 @@ class SwitchController:
       # Identifico el Flow en base a IPs, Puertos y Protocolo
       flow = Flow(ip.srcip, src_port, ip.dstip, dst_port, ip.protocol, packet.src, packet.dst)
 
-      if self.network_controller.install(flow):
-        log.debug("No match:", ip.srcip, src_port, ip.dstip, dst_port, ip.protocol, packet.src, packet.dst, self.dpid)
+      if self.network_controller.validate_and_install(flow):
+        log.info("No match: (%s) %s:%s --> (%s) %s:%s  proto:%s, switch:%s", str(packet.src), str(ip.srcip),\
+                 str(src_port),str(packet.dst), str(ip.dstip), str(dst_port), str(ip.protocol), str(self.dpid))
 
         # Reenvio el paquete que genero el packetIn sacandolo por el puerto que matchea con la nueva regla
         msg = of.ofp_packet_out()
