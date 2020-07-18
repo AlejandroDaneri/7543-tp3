@@ -1,8 +1,7 @@
 import pox.openflow.discovery
 from pox.lib.util import dpid_to_str
 from extensions.switch import SwitchController
-#from extensions.graph import Graph
-from extensions.dijkstra import find_all_paths
+from extensions.flow import Flow
 from networkx import DiGraph, all_shortest_paths
 import threading
 
@@ -59,6 +58,10 @@ class Controller(EventMixin):
 
     def _handle_flow_removal(self, event):
         flow_removed = event.ofp
+        m = flow_removed.match
+        f = Flow(m.nw_src, m.tp_src, m.nw_dst, m.tp_dst, m.nw_proto, m.dl_src, m.dl_dst)
+        if f.flow_id() in self.flows:
+            del self.flows[f.flow_id()]
         log.debug("Flow removed %s " % str(flow_removed))
         for sw in self.switches:
             self.switches[sw].removeRuleByFlow(flow_removed)
