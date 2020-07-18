@@ -100,18 +100,21 @@ class Controller(EventMixin):
         return self._ecmp_last_index_used[(src, dst)]
 
     # Calcula el ECMP adecuado e instala la ruta de L2 entre el Host origen y el destino
-    def actualizaPath(self, flow):
+    def find_path(self, flow):
         # all_paths = [shortest_path(self.graph, str(flow.src_hw), str(flow.dst_hw))]
         all_paths = find_all_paths(self.graph, str(flow.src_hw), str(flow.dst_hw))
         if not all_paths:
             log.debug("No se pudo identificar un path entre %s y %s" % (str(flow.src_hw), str(flow.dst_hw),))
-            return False
+            return None
         index = self._get_latest_ECMP_index(str(flow.src_hw), str(flow.dst_hw), len(all_paths))
         path = all_paths[index]
+        return path
 
+    # Instalo las reglas que matcheen con el flow especifico para todos los switches del path
+    def install(self, flow, path):
         i = 0
         while i < len(path):
-            # log.debug("Estoy en el loop", i)
+            log.debug("Estoy en el loop instalando reglas", i)
             if path[i] in self.switches:
                 sw_controller = self.switches[path[i]]
                 next_hop = None if i == len(path) - 1 else path[i + 1]
@@ -119,16 +122,13 @@ class Controller(EventMixin):
             i += 1
         return True
 
-
     def _handle_HostEvent(self, event):
         h = str(event.entry.macaddr)
         s = dpid_to_str(event.entry.dpid)
         p = event.entry.port
-        i = None
-        if len(event.entry.ipAddrs):
-            i = event.entry.ipAddrs[0]
-        #log.debug("Event mac: %s,  switch %s, IP: %s" % (h, s, event.entry.ipAddrs))
-        #log.debug("Hosts detectados: %s", self.hosts)
+
+        log.debug("Event mac: %s,  switch %s, IP: %s" % (h, s, event.entry.ipAddrs))
+        log.debug("Hosts detectados: %s", self.hosts)
         if event.leave:
             if h in self.hosts:
                 del self.hosts[h]

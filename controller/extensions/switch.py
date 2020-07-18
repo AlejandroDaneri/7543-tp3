@@ -41,7 +41,13 @@ class SwitchController:
       # Identifico el Flow en base a IPs, Puertos y Protocolo
       flow = Flow(ip.srcip, src_port, ip.dstip, dst_port, ip.protocol, packet.src, packet.dst)
 
-      if self.network_controller.actualizaPath(flow):
+      path = self.network_controller.find_path(flow)
+
+      if path is not None:
+        log.debug("No match:", ip.srcip, src_port, ip.dstip, dst_port, ip.protocol, packet.src, packet.dst, self.dpid)
+
+        self.network_controller.install(flow, path)
+
         # Reenvio el paquete que genero el packetIn sacandolo por el puerto que matchea con la nueva regla
         msg = of.ofp_packet_out()
         msg.data = event.ofp
@@ -50,7 +56,6 @@ class SwitchController:
     else:
       log.debug("Ignorando [%s puerto %s] (%s) -> (%s)", dpid_to_str(event.dpid), event.port, str(packet.src),
                str(packet.dst))
-
 
   def update(self, flow, next_hop, ip_routing=True):
     msg = of.ofp_flow_mod(flags=of.OFPFF_SEND_FLOW_REM)
