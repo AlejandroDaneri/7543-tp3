@@ -41,7 +41,6 @@ class Controller(EventMixin):
     def _handle_ConnectionUp(self, event):
         """
         Esta funcion es llamada cada vez que un nuevo switch establece conexion
-        Se encarga de crear un nuevo switch controller para manejar los eventos de cada switch
         """
         log.info("Switch %s has come up.", dpid_to_str(event.dpid))
         self.graph.add_node(dpid_to_str(event.dpid))
@@ -57,9 +56,6 @@ class Controller(EventMixin):
         self.graph.remove_node(dpid_to_str(event.dpid))
 
     def _handle_flow_removal(self, event):
-        """
-        handler flow removed event here
-        """
         flow_removed = event.ofp
         log.debug("Flow removed %s " % str(flow_removed))
         for sw in self.switches:
@@ -100,7 +96,7 @@ class Controller(EventMixin):
         return self._ecmp_last_index_used[(src, dst)]
 
     # Calcula el ECMP adecuado e instala la ruta de L2 entre el Host origen y el destino
-    def find_path(self, flow):
+    def _find_path(self, flow):
         # all_paths = [shortest_path(self.graph, str(flow.src_hw), str(flow.dst_hw))]
         all_paths = find_all_paths(self.graph, str(flow.src_hw), str(flow.dst_hw))
         if not all_paths:
@@ -111,7 +107,10 @@ class Controller(EventMixin):
         return path
 
     # Instalo las reglas que matcheen con el flow especifico para todos los switches del path
-    def install(self, flow, path):
+    def install(self, flow):
+        path = self._find_path(flow)
+        if path is None:
+            return False
         i = 0
         while i < len(path):
             log.debug("Estoy en el loop instalando reglas", i)
