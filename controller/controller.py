@@ -1,14 +1,15 @@
 import pox.openflow.discovery
 from pox.lib.util import dpid_to_str
 from extensions.switch import SwitchController
-from extensions.graph import Graph
-from extensions.dijkstra import shortest_path, find_all_paths
+#from extensions.graph import Graph
+from extensions.dijkstra import find_all_paths
+from networkx import Graph, all_shortest_paths
+
 
 from pox.core import core
 from pox.lib.revent import *
 
 log = core.getLogger()
-
 
 class Controller(EventMixin):
 
@@ -98,7 +99,10 @@ class Controller(EventMixin):
     # Calcula el ECMP adecuado e instala la ruta de L2 entre el Host origen y el destino
     def _find_path(self, flow):
         # all_paths = [shortest_path(self.graph, str(flow.src_hw), str(flow.dst_hw))]
-        all_paths = find_all_paths(self.graph, str(flow.src_hw), str(flow.dst_hw))
+        #all_paths = find_all_paths(self.graph, str(flow.src_hw), str(flow.dst_hw))
+        all_paths = []
+        all_paths.extend(all_shortest_paths(self.graph, str(flow.src_hw), str(flow.dst_hw)))
+
         if not all_paths:
             log.debug("No se pudo identificar un path entre %s y %s" % (str(flow.src_hw), str(flow.dst_hw),))
             return None
