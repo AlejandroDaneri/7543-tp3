@@ -87,6 +87,7 @@ class Controller(EventMixin):
                 self.graph.remove_edge(src_sw, dst_sw)
                 self.switches[src_sw].removeLinkTo(dst_sw)
                 log.info('link removed [%s:%s] -> [%s:%s]', src_sw, src_port, dst_sw, dst_port)
+                log.debug([e for e in self.graph.edges])
             except Exception as e:
                 log.error("remove edge error: %s" % str(e))
 
@@ -127,8 +128,8 @@ class Controller(EventMixin):
 
             try:
                 path = self._find_path(flow)
-            except:
-                log.warn("No se puede llegar al destino")
+            except Exception as e:
+                log.warn("No se puede llegar al destino: %s" % str(e))
                 return False
             i = 0
             while i < len(path):
