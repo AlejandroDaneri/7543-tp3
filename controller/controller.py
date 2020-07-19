@@ -129,7 +129,7 @@ class Controller(EventMixin):
             try:
                 path = self._find_path(flow)
             except Exception as e:
-                log.warn("No se puede llegar al destino: %s" % str(e))
+                log.warn("No se puede encontrar un camino al destino (flow {}): {}".format(flow, str(e)))
                 return False
             i = 0
             while i < len(path):
