@@ -102,8 +102,6 @@ class Controller(EventMixin):
 
     # Calcula el ECMP adecuado e instala la ruta de L2 entre el Host origen y el destino
     def _find_path(self, flow):
-        # all_paths = [shortest_path(self.graph, str(flow.src_hw), str(flow.dst_hw))]
-        #all_paths = find_all_paths(self.graph, str(flow.src_hw), str(flow.dst_hw))
         all_paths = []
         all_paths.extend(all_shortest_paths(self.graph, str(flow.src_hw), str(flow.dst_hw)))
 

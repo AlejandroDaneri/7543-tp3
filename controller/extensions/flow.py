@@ -2,8 +2,6 @@ from struct import pack
 from zlib import crc32
 
 class Flow:
-    # TODO: separar ip/port en clases aparte (Host tal vez?)
-    # NOTA: le puse el packet para poder obtener la MAC src/dst
     def __init__(self, src_ip, src_port, dst_ip, dst_port, protocol, src_hw, dst_hw):
         self.dst_port = dst_port
         self.src_port = src_port

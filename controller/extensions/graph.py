@@ -7,7 +7,7 @@ class Graph:
 
     def __init__(self):
         # Como clave tiene la MAC de un switch y como valor
-        # un array de tuplas (sw,port) que indica con que port llega al sw
+        # un array de sw que tiene directamente conectados
         self.dict = {}
 
     def add_node(self, node):
