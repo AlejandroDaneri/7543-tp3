@@ -20,11 +20,9 @@ class FatTree(Topo):
 
         for level in range(levels):
             # Por cada uno de los niveles, agrego 2^nivel switches
-            # y para seguir el trafico con pox se nos hace mucho mas facil
             switches_count = 2**level
 
             # Empiezo desde el 1 ya que mininet linkea por defecto mac de s1 con 00-00-..-01 ,etc
-            # y para seguir el trafico con pox se nos hace mucho mas facil
             # nivel = floor(log2(#swith)), siendo nivel=0 el primer nivel
             switches = [self.addSwitch('s{}'.format(2**(level+1)-(switches_count-n))) for n in range(switches_count)]
 
