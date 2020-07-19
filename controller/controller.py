@@ -95,7 +95,7 @@ class Controller(EventMixin):
         if (src, dst) not in self._ecmp_last_index_used:
             self._ecmp_last_index_used[(src, dst)] = 0
         else:
-            if self._ecmp_last_index_used[(src, dst)] == total - 1:
+            if self._ecmp_last_index_used[(src, dst)] >= (total - 1):
                 self._ecmp_last_index_used[(src, dst)] = 0
             else:
                 self._ecmp_last_index_used[(src, dst)] += 1
