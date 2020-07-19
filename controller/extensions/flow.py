@@ -20,3 +20,7 @@ class Flow:
         hash_input[3] = self.src_port if self.src_port else 0
         hash_input[4] = self.dst_port if self.dst_port else 0
         return crc32(pack('LLHHH', *hash_input))
+
+    def __str__(self):
+        return "Flow proto {} ({}) {}:{} --> ({}) {}:{}".format(self.protocol,self.src_hw,self.src_ip,self.src_port,\
+                                                                self.dst_hw,self.dst_ip,self.dst_port)
